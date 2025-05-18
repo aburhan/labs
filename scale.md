@@ -432,15 +432,9 @@ You will deploy the online boutique application across multiple GKE clusters usi
    After Completetion of this trigger <strong>navigate</strong> to the <strong>Cloud Deploy</strong> and check the <strong>release logs</strong>. It suppose to be failed with render Error <strong>(The rollout failed with deployFailureCause: RELEASE_FAILED. (Release render operation ended in failure.))</strong>
    Follow the step to navigate to the logs.
 
-2. In the Google Cloud Console, use the <strong>search bar</strong> at the top to navigate to <strong>Cloud Deploy</strong>. Click on Cloud deploy.
+2. Navigate to the [Cloud Deploy pipelines](https://console.cloud.google.com/deploy/delivery-pipelines/us-central1/qwiklabs-delivery-service-pipeline)
 
-   <img src="img/search_bar.png" alt="SEARCH_BAR" width="500"> <br>
-
-3. Click on <strong>Realase name</strong> --> <strong>RollOut</strong>.
-
-   <img src="img/release_name.png" alt="SEARCH_BAR" width="500"> <br>
-
-   <img src="img/roll_out.png" alt="SEARCH_BAR" width="500"> <br>
+3. In the <strong>Delivery pipeline details</strong> section, select <strong>Rollouts</strong> then click on the hyperlinked Name of the failed release.
 
 4. Here you can check the <strong>ERROR</strong>.
 
@@ -448,27 +442,36 @@ You will deploy the online boutique application across multiple GKE clusters usi
 
    <strong>(The rollout failed with deployFailureCause: RELEASE_FAILED. (Release render operation ended in failure.))</strong>
 
-## Task 10. Troubleshooting Steps (Platform Engineer) ![usr1](img/qwiklabs-icons1-small.drawio.png)
+5. Select the <strong> Summary </strong>, then click on the <strong>Render logs</strong>
 
-In this task you will log into the `Service Project` as the `Developer` and fix the error present in the release.
-
-1. Clone the Source Repository. Use the cloud shell command line to run the below command. Update the `HOST_PROJECT_ID` Under --project argument.
+6. Scroll through the <strong>Build details</strong> to view the error which caused this rollout to fail. Example output
 
    ```sh
-   gcloud source repos clone app-repo --project=HOST_PROJECT_ID
-   cd app-repo
+    - stderr: "Error: must build at directory: not a valid directory: evalsymlink failure on '/workspace/source/kubernetes-manifests-service-1XXXXX' : lstat /workspace/source/kubernetes-manifests-service-1XXXXX: no such file or directory\n"
+   ```
+
+   In the next task, you will troubleshoot this error and ensure the application is deployed to both clusters.
+
+## Task 10. Troubleshooting Steps (Platform Engineer) ![usr1](img/qwiklabs-icons1-small.drawio.png)
+
+In this task you will resolve the error with the release from the previous step by update the 
+
+1. In the terminal, ensure you are in the `app-repo` directory, switch to the app branch
+
+   ```sh
    git checkout app
    ```
 
-2. Use vim Editor to edit the file.
+2. Open the Cloudshell editor
 
    ```sh
    vim app/skaffold-service-1.yaml
    ```
 
-3. look at for the manifests.kustomize.paths replace the path value form `kubernetes-manifests-service-1xxxxx` to `kubernetes-manifests-service-1`.
+3. In the terminal type `i` to update the manifests.kustomize.paths replace the path value form `kubernetes-manifests-service-1xxxxx` to `kubernetes-manifests-service-1`.
 
-4. Save the file.
+4. To save the file `ESC` + `:wq`
+
 5. Commit the changes using below command.
 
    ```sh
@@ -499,14 +502,14 @@ In this task you will log into the `Service Project` as the `Developer` and fix 
    | ------------------------------------------ | -------------------------------------------------------------------------------------------------- | ----------- |
    | `service-2-application-deployment-trigger` | Deploys other application components to the `qwiklabs-developer-2-cluster` in the service project. | 2 min 5 sec |
 
-8. After completion of service-2-application-deployment-trigger you can access the frontend of Online Boutique Application.
+8. After completion of `service-2-application-deployment-trigger` you can access the frontend of Online Boutique Application.
 
    In order to access the website, navigate to the Gateways, Ingress and Services where under service section the `frontend-external` IP address will be available.
    Copy the ip address present under IP Addresses and paste it in the browser.
 
    ```sh
    gcloud container clusters get-credentials qwiklabs-developer-1-cluster --region $REGION --project $SERVICE_PROJECT_ID
-   kubectl get services frontend-external -n dev-1
+   export EX_IP="http://$(kubectl get service frontend-external -n dev-1 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" && echo $EX_IP
    ```
 
 9. Enable the `productcatalog-cicd-trigger` cloud build trigger in the host project.
@@ -518,26 +521,44 @@ In this task you will log into the `Service Project` as the `Developer` and fix 
 
    <img src="img/productcatalog-enable.png" alt="ENABLE-TRIGGER" width="500"> <br>
 
-   <qlinfo>
-   <strong>Note</strong> : You will need to perform the task as a platform engineer.
-   </qlinfo>
-
 ## Task 11. Make Changes in Product Catalog Microservice (Developer) ![usr2](img/qwiklabs-icons2-small.drawio.png)
 
 In this task, you will sign into the console as the Developer persona, modify the application code and push to repository.
 
-1. On the top right corner, you can see an icon of <strong>Cloud shell</strong>, Click on the Cloud shell icon, GCP provision a <strong>Cloud shell instance</strong> which would have all the necessary packages pre installed.
+1. In the Google Cloud Console title bar, **click** on the Profile Icon and click **Add account**
 
-2. Once you connect to <strong>Cloud shell instance</strong>, you can see a terminal; on top of the terminal . You can find a <strong>Open Editor</strong> button, press that and you can see the <strong>Cloud Shell Editor</strong> similar to VS Code.
+2. Sign in using the Developer username {{{ user_2.username }}} and password {{{ user_2.password }}}
 
-3. Once you are connected you can clone the <strong>application repository</strong> using git clone command, you can copy this command and paste it on the <strong>cloud shell terminal </strong>.  
-   <strong><i>gcloud source repos clone app-repo --project=(Enter your Host Project ID)</i> </strong>.
+3. In the CloudShell terminal, clone the Application Repository using git clone command.
 
-4. Checkout in main branch and left panel you able to view all the codes on the <strong>editor</strong> button.
+   <ql-code-block language="bash" templated>
+   export USER_EMAIL={{{user_2.username|['DEVELOPER_PERSONA_EMAIL]'}}}
+   export USER={{{user_2.local_username|['DEVELOPER_PERSONA_USERNAME]'}}}
+   export PROJECT_ID={{{project_1.project_id|'[PROJECT_ID]'}}}
+   </ql-code-block>
 
-5. Move into the src folder and copy/paste in the same directory, and rename the folder as <i>productcatalogservice-v2</i>.
+4. Clone the application repo:
 
-6. Go to this file <strong><i>src/productcatalogservice-v2/products.json</i></strong> and replace the old names values and description with the new names values and description as mentioned in the below table.
+   ```sh
+   gcloud source repos clone app-repo --project=$PROJECT_ID
+   cd app-repo
+   git checkout app
+   ```
+
+5. Update the `git config` credentials to use the Developer person
+
+   ```sh
+   git config user.email "$USER_EMAIL"
+   git config user.name "$USER"
+   ```
+
+6. In the Editor, open the `src/productcatalogservice-v2/products.json` file.
+
+   ```sh
+   cloudshell edit app/src/productcatalogservice-v2/products.json
+   ```
+
+7. Replace the old names values and description with the new names values and description as mentioned in the below table.
 
    | old name value | old description                                                                     |
    | -------------- | ----------------------------------------------------------------------------------- |
@@ -549,13 +570,20 @@ In this task, you will sign into the console as the Developer persona, modify th
    | "Tank Top for Women" | "SALE!!! SALE!!! SALE!!!."                                                                           |
    | "Watch for men"      | "SALE!!! SALE!!! SALE!!!. This gold-tone stainless steel watch will work with most of your outfits." |
 
-7. Once edit has done, Commit the changes to the repository.
-   <strong>"git add ."
-   "git commit -m "code added" "
-   "git push origin app" </strong>
+8. Commit the changes to the repository.
 
-8. <strong>productcatalog-cicd-trigger</strong> will automatically execute in the cloud build trigger tab.
-9. Navigate to the <strong>Cloud build</strong> and validate the cloud build logs under <strong>history</strong> tab.
+   ```sh
+   git add .
+   git commit -m "code added"
+   git push origin app
+   ```
+
+   <ql-infobox>
+   <strong>Note</strong>
+   The `productcatalog-cicd-trigger` trigger will automatically execute in the Cloud Build trigger tab.
+   </ql-infobox>
+
+9. Navigate to the <strong>Cloud Build</strong> and validate the cloud build logs under <strong>History</strong> tab.
 
    | Trigger                       | Description                                         | Duration |
    | ----------------------------- | --------------------------------------------------- | -------- |
@@ -564,9 +592,9 @@ In this task, you will sign into the console as the Developer persona, modify th
 10. After Completetion of productcatalog-cicd-trigger , to see the changes on application's frontend. Refresh the browser after few minutes later .
     <img src="img/Service-v2.png" alt="V1 Service" width="600.00">
 
-## Task 12. Create dev-1-team and dev-2-team within the GKE Enterprise (Platform Engineer)![usr1](img/qwiklabs-icons1-small.drawio.png)
+## Task 12. Create dev-1-team and dev-2-team within the GKE (Platform Engineer)![usr1](img/qwiklabs-icons1-small.drawio.png)
 
-In this step, you will create specific [teams within the GKE Enterprise](https://cloud.google.com/kubernetes-engine/fleet-management/docs/setup-teams).
+In this step, you will [set up teams for your GKE fleet](https://cloud.google.com/kubernetes-engine/fleet-management/docs/setup-teams).
 
 1. In the <strong>Google Cloud Console</strong>, select the <strong>service project ID</strong>.
 2. In the search bar type <strong>Kubernetes Engine</strong> and under <strong>Resource Management</strong> click on <strong>Teams</strong>.
